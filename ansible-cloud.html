@@ -50,6 +50,8 @@
         <h1>Using Ansible to Manage Cloud Applications</h1>
         <h3>Monty Taylor
           &lt;<a href="mailto:mordred@inaugust.com">mordred@inaugust.com</a>&gt;</h3>
+        <h3> twitter: @e_monty </h3>
+        <h4> <a href='http://emonty.github.io/ansible-cloud.html'>http://emonty.github.io/ansible-cloud.html</a> </h4>
       </section>
 
       <section id="who-am-i" class="slide level2">
@@ -264,8 +266,8 @@ define user::virtual::localuser(
           <h1>Our code is Open Source, right? What about passwords and keys ...</h1>
       </section>
 
-      <section id="heira" class="slide level2">
-          <h1>heira</h1>
+      <section id="hiera" class="slide level2">
+          <h1>hiera</h1>
           <ul>
               <li>Simple YAML database, sits on puppetmaster</li>
               <li>Use it for secret data</li>
@@ -333,28 +335,22 @@ ansible-playbook -f 10 /etc/ansible/clean_workspaces.yaml --extra-vars "project=
       <section id="puppet-module" class="slide level2">
           <h1>puppet module</h1>
           <pre><code>def main():
-    module = AnsibleModule(
-        argument_spec=dict(
-            timeout=dict(default="30m"),
-            puppetmaster=dict(required=True),
-            show_diff=dict(
-                default=False, aliases=['show-diff'], type='bool'),
-        ),
-    )
+    module = AnsibleModule(argument_spec=dict(
+        timeout=dict(default="30m"),
+        puppetmaster=dict(required=True),
+        show_diff=dict(default=False, aliases=['show-diff'], type='bool'),
+    ))
     p = module.params
 
-    global PUPPET_CMD
-    PUPPET_CMD = module.get_bin_path("puppet", False)
-
-    if not PUPPET_CMD:
-        module.fail_json(
-            msg="Could not find puppet. Please ensure it is installed.")
+    puppet_cmd = module.get_bin_path("puppet", False)
+    if not puppet_cmd:
+        module.fail_json(msg="Could not find puppet. Please ensure it is installed.")
           </code></pre>
       </section>
 
       <section id="puppet-module-2" class="slide level2">
           <h1>puppet module (cont)</h1>
-          <pre><code>
+          <pre><code class="python">
     cmd = ("timeout -s 9 %(timeout)s %(puppet_cmd)s agent --onetime"
            " --server %(puppetmaster)s"
            " --ignorecache --no-daemonize --no-usecacheonfailure --no-splay"
@@ -368,41 +364,24 @@ ansible-playbook -f 10 /etc/ansible/clean_workspaces.yaml --extra-vars "project=
       </section>
 
       <section id="puppet-module-3" class="slide level2">
-          <h1>puppet module (cont)</h1>
           Please. Everyone. Marvel at the following logic
           <pre><code>
-    if rc == 0:
-        # success
+    if rc == 0:  # success
         module.exit_json(rc=rc, changed=False, stdout=stdout)
     elif rc == 1:
-        # rc==1 could be because it's disabled
-        # rc==1 could also mean there was a compilation failure
+        # rc==1 could be because it's disabled OR there was a compilation failure
         disabled = "administratively disabled" in stdout
         if disabled:
             msg = "puppet is disabled"
         else:
-            msg = "puppet did not run"
-        module.exit_json(
-            rc=rc, disabled=disabled, msg=msg,
-            error=True, stdout=stdout, stderr=stderr)
-    elif rc == 2:
-        # success with changes
-        module.exit_json(rc=0, changed=True)
-    elif rc == 124:
-        # timeout
-        module.exit_json(
-            rc=rc, msg="%s timed out" % cmd, stdout=stdout, stderr=stderr)
-          </code></pre>
-      </section>
-
-      <section id="puppet-module-4" class="slide level2">
-          <h1>puppet module (cont)</h1>
-          <pre><code>
-    else:
-        # failure
-        module.fail_json(
-            rc=rc, msg="%s failed with return code: %d" % (cmd, rc),
-            stdout=stdout, stderr=stderr)
+            msg = "puppet compilation failed"
+        module.fail_json(rc=rc, disabled=disabled, msg=msg, stdout=stdout, stderr=stderr)
+    elif rc == 2:  # success with changes
+        module.exit_json(changed=True)
+    elif rc == 124:  # timeout
+        module.exit_json(rc=rc, msg="%s timed out" % cmd, stdout=stdout, stderr=stderr)
+    else:  # failure
+        module.fail_json(rc=rc, msg="%s failed" % (cmd), stdout=stdout, stderr=stderr)
           </code></pre>
       </section>
 
@@ -444,9 +423,29 @@ ansible-playbook -f 10 /etc/ansible/clean_workspaces.yaml --extra-vars "project=
           <ul>
               <li>List of servers to operate on</li>
               <li>Optionally variables associated with each server</li>
+              <li>Optional groups of servers</li>
               <li>Simple yaml file in /etc/ansible/hosts</li>
               <li>Dynamic executable that returns JSON</li>
           </ul>
+      </section>
+
+      <section id="ansible-inventory-from-file" class="slide level2">
+          <h1>Simple inventory</h1>
+          <pre>
+review.openstack.org
+git01.openstack.org
+git02.openstack.org
+pypi.dfw.openstack.org
+pypi.iad.openstack.org
+
+[pypi]
+pypi.dfw.openstack.org
+pypi.iad.openstack.org
+
+[git]
+git01.openstack.org
+git02.openstack.org
+      </pre>
       </section>
 
       <section id="ansible-inventory-from-puppet" class="slide level2">
@@ -485,29 +484,46 @@ print json.dumps(data, sort_keys=True, indent=2)
 
       <section>
           <h1>Consider this data</h1>
-  pypi:
-    image_name: Ubuntu 12.04.4
-    provision_group: ubuntu_hosts
-    volumes:
-      - size: 200
-        mount: /srv
-    hosts:
-      pypi.dfw:
-        flavor_ram: 2048
-      pypi.iad:
-        flavor_ram: 2048
-        region: IAD
-      pypi.ord:
-        flavor_ram: 2048
-        region: ORD
-      pypi.region-b.geo-1:
-        cloud: hp
-        flavor_ram: 2048
+          <pre><code>
+pypi:
+  image_name: Ubuntu 12.04.4
+  flavor_ram: 2048
+  provision_group: U
+  volumes:
+    - size: 200
+      mount: /srv
+  hosts:
+    pypi.dfw:
+      region: DFW
+    pypi.iad:
+      region: IAD
+    pypi.ord:
+      region: ORD
+    pypi.region-b.geo-1:
+      cloud: hp
+          </code></pre>
+    </section>
+
+    <section>
+        <h1>Steps to launch a node</h1>
+        <ol>
+            <li>Create a compute instance</li>
+            <li>Wait for instance to exist</li>
+            <li>Create a floating IP</li>
+            <li>Attach floating IP to instance</li>
+            <li>Create one or more volumes</li>
+            <li>Attach volumes to instance</li>
+            <li>Wait for SSH to work</li>
+            <li>On host, format each volume</li>
+            <li>On host, mount each volume</li>
+            <li>On host, install config management software</li>
+            <li>On host, run config management software</li>
+        </ol>
     </section>
 
     <section>
         <h1>Launch a node</h1>
-        <pre>
+        <pre><code>
 ---
 - name: Launch Node
   os_compute:
@@ -558,7 +574,7 @@ print json.dumps(data, sort_keys=True, indent=2)
       groups: "{{ provision_group }},hasvolumes"
       openstack: "{{ node.openstack }}"
   when: attached_volumes|length != 0
-        </pre>
+        </code></pre>
     </section>
 
     <section>
@@ -568,6 +584,129 @@ print json.dumps(data, sort_keys=True, indent=2)
             <li> All of the meta-data the cloud knows is available </li>
             <li> No need for puppetmaster now </li>
         </ul>
+    </section>
+
+    <section>
+        <pre><code>
+      "pypi.dfw.openstack.org": {
+        "ansible_ssh_host": "23.253.237.8",
+        "openstack": {
+          "HUMAN_ID": true,
+          "NAME_ATTR": "name",
+          "OS-DCF:diskConfig": "MANUAL",
+          "OS-EXT-STS:power_state": 1,
+          "OS-EXT-STS:task_state": null,
+          "OS-EXT-STS:vm_state": "active",
+          "accessIPv4": "23.253.237.8",
+          "accessIPv6": "2001:4800:7817:104:d256:7a33:5187:7e1b",
+          "addresses": {
+            "private": [
+              {
+                "addr": "10.208.195.50",
+                "version": 4
+              }
+            ],
+            "public": [
+              {
+                "addr": "23.253.237.8",
+                "version": 4
+              },
+              {
+                "addr": "2001:4800:7817:104:d256:7a33:5187:7e1b",
+                "version": 6
+              }
+            ]
+          },
+          "cloud": "rax",
+          "config_drive": "",
+          "created": "2014-09-05T15:32:14Z",
+          "flavor": {
+            "id": "performance1-4",
+            "links": [
+              {
+                "href": "https://dfw.servers.api.rackspacecloud.com/610275/flavors/performance1-4",
+                "rel": "bookmark"
+              }
+            ],
+            "name": "4 GB Performance"
+          },
+          "hostId": "adb603d4566efe0392756c76dab38ffcba22099368837c7973321e77",
+          "human_id": "pypidfwopenstackorg",
+          "id": "de672205-9245-46b6-b3df-489ccf9e0c17",
+          "image": {
+            "id": "928e709d-35f0-47eb-b296-d18e1b0a76b7",
+            "links": [
+              {
+                "href": "https://dfw.servers.api.rackspacecloud.com/610275/images/928e709d-35f0-47eb-b296-d18e1b0a76b7",
+                "rel": "bookmark"
+              }
+            ]
+          },
+          "interface_ip": "23.253.237.8",
+          "key_name": "launch-node-root",
+          "links": [
+            {
+              "href": "https://dfw.servers.api.rackspacecloud.com/v2/610275/servers/de672205-9245-46b6-b3df-489ccf9e0c17",
+              "rel": "self"
+            },
+            {
+              "href": "https://dfw.servers.api.rackspacecloud.com/610275/servers/de672205-9245-46b6-b3df-489ccf9e0c17",
+              "rel": "bookmark"
+            }
+          ],
+          "metadata": {},
+          "name": "pypi.dfw.openstack.org",
+          "networks": {
+            "private": [
+              "10.208.195.50"
+            ],
+            "public": [
+              "23.253.237.8",
+              "2001:4800:7817:104:d256:7a33:5187:7e1b"
+            ]
+          },
+          "progress": 100,
+          "region": "DFW",
+          "status": "ACTIVE",
+          "tenant_id": "610275",
+          "updated": "2014-09-05T15:32:49Z",
+          "user_id": "156284",
+          "volumes": [
+            {
+              "HUMAN_ID": false,
+              "NAME_ATTR": "name",
+              "attachments": [
+                {
+                  "device": "/dev/xvdb",
+                  "host_name": null,
+                  "id": "c6f5229c-1cc0-47c4-aab7-60db1f6cf8e8",
+                  "server_id": "de672205-9245-46b6-b3df-489ccf9e0c17",
+                  "volume_id": "c6f5229c-1cc0-47c4-aab7-60db1f6cf8e8"
+                }
+              ],
+              "availability_zone": "nova",
+              "bootable": "false",
+              "created_at": "2014-09-05T14:37:42.000000",
+              "device": "/dev/xvdb",
+              "display_description": null,
+              "display_name": "pypi.dfw.openstack.org/main01",
+              "human_id": null,
+              "id": "c6f5229c-1cc0-47c4-aab7-60db1f6cf8e8",
+              "metadata": {
+                "readonly": "False",
+                "storage-node": "1845027a-5e07-47a1-9572-3eea4716f726"
+              },
+              "os-vol-tenant-attr:tenant_id": "610275",
+              "size": 200,
+              "snapshot_id": null,
+              "source_volid": null,
+              "status": "in-use",
+              "volume_type": "SATA"
+            }
+          ]
+        }
+      },
+        </code></pre>
     </section>
 
     <section>
@@ -583,11 +722,13 @@ print json.dumps(data, sort_keys=True, indent=2)
     <section>
         <h1> Thank you! </h1>
         <p> http://emonty.github.io/ansible-cloud.html </p>
-        <p> twitter: @e_monty </p>
+        <h3>Monty Taylor
+          &lt;<a href="mailto:mordred@inaugust.com">mordred@inaugust.com</a>&gt;</h3>
+        <h3> twitter: @e_monty </h3>
+        <h4> <a href='http://emonty.github.io/ansible-cloud.html'>http://emonty.github.io/ansible-cloud.html</a> </h4>
     </section>
 
     </div>
-
 
   </div>
 
