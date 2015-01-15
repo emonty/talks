@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8">
 
-    <title>Using Ansible to Manage Cloud Applications</title>
+    <title>NoOps with Ansible and Puppet</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -47,7 +47,7 @@
         <img src="images/openstack-cloud-software-vertical-large.png"
              alt="OpenStack" id="cover"/>
 
-        <h1>Using Ansible to Manage Cloud Applications</h1>
+        <h1>NoOpes with Ansible and Puppet</h1>
         <h3>Monty Taylor
           &lt;<a href="mailto:mordred@inaugust.com">mordred@inaugust.com</a>&gt;</h3>
         <h3> twitter: @e_monty </h3>
@@ -126,6 +126,10 @@
 
           <section id="million-test-jobs-in-the-last-6-months" class="slide level2" data-transition='zoom'>
               <h1>1.7 Million Test Jobs in the last 6 Months</h1>
+          </section>
+
+          <section id="28-million-tests-in-december" class="slide level2" data-transition='zoom'>
+              <h1>28 Million Tests in December</h1>
           </section>
 
           <section id="terabytes-of-log-data-in-six-months" class="slide level2" data-transition='zoom'>
@@ -485,10 +489,31 @@ print json.dumps(data, sort_keys=True, indent=2)
       <section>
           <h1>Consider this data</h1>
           <pre><code>
+pypi.dfw.openstack.org:
+  image_name: Ubuntu 12.04.4
+  flavor_ram: 2048
+  region: DFW
+  cloud: rackspace
+  volumes:
+    - size: 200
+      mount: /srv
+pypi.region-b.geo-1.openstack.org:
+  image_name: Ubuntu 12.04.4
+  flavor_ram: 2048
+  region: region-b.geo-1
+  cloud: hp
+  volumes:
+    - size: 200
+      mount: /srv
+          </code></pre>
+    </section>
+
+      <section>
+          <h1>Further consider this data</h1>
+          <pre><code>
 pypi:
   image_name: Ubuntu 12.04.4
   flavor_ram: 2048
-  provision_group: U
   volumes:
     - size: 200
       mount: /srv
