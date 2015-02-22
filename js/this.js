@@ -23,3 +23,7 @@ Reveal.initialize({
 	]
 });
 
+// footer displayed upon load, hides when slide changes
+Reveal.addEventListener('slidechanged', function(event) {
+    document.querySelector('.reveal .footer').style.display = 'none';
+});
