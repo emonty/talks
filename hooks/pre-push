@@ -25,7 +25,7 @@ url="$2"
 z40=0000000000000000000000000000000000000000
 
 echo "Rsyncing to inaugust.com"
-rsync -avz --delete --exclude=.git . scylla.inaugust.com:/usr/local/quoins-tg2.1-env/inaugust/inaugust/public/talks
+rsync -avz --delete --exclude=.git . kleos.inaugust.com:/var/www/inaugust.com/talks
 
 IFS=' '
 while read local_ref local_sha remote_ref remote_sha
