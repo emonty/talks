@@ -96,7 +96,7 @@
               </section>
 
               <section class="slide level2">
-                  <h1>OpenStack needs product management coordination</h1>
+                  <h1>OpenStack needs product management <em>coordination</em></h1>
               </section>
 
               <section class="slide level2">
@@ -124,17 +124,22 @@
               </section>
 
               <section class="slide level2">
-                  <p>As a cloud consumer, I want to deploy and run an application on the internet so
-                  that my customers all over the world can consume it. </p>
+                  <p>As an application developer,<br />
+                  I want to deploy and run an application on the internet<br />
+                  so that my customers all over the world can consume it.</p>
               </section>
 
               <section class="slide level2">
-                  <p>As an devops engineer, I want to deploy the application across multiple clouds
+                  <p>As an application developer,<br />
+                  I want to deploy the application across multiple clouds<br />
                   so that my service survives issues in any one of them.</p>
               </section>
 
               <section class="slide level2">
                   <h1>THIS WORKS</h1>
+                  <h3>I'm doing it myself as we speak</h3>
+                  <img style="float:right; margin-right:24pt" src="images/graphite.openstack.org.png"/>
+
 
                   <p class='fragment'>10-20k VMs per-day</p>
                   <p class='fragment'>3 (soon to be 6) clouds</p>
@@ -168,13 +173,13 @@
                   <h1>Problem: hypervisor image file format</h1>
                   <ul>
                       <li class='fragment'>
-                          RAX - VHD
+                          Rackspace uses VHD
                       </li>
                       <li class='fragment'>
-                          HP - qcow2
+                          HP uses qcow2
                       </li>
                       <li class='fragment'>
-                          DreamHost - RAW
+                          DreamHost uses RAW
                       </li>
                   </ul>
               </section>
@@ -193,24 +198,24 @@
                   <h1>Problem: image API version</h1>
                   <ul>
                       <li class='fragment'>
-                          v1
+                          HP uses v1
                       </li>
                       <li class='fragment'>
-                          v2
+                          vexxhost uses v2
                       </li>
                   </ul>
-              </section>
-
-              <section class="slide level2">
-                  <h1>Problem: API version discovery</h1>
-                  <p>Try one - if it doesn't work, try the other</p>
-                  <p><em>maybe</em> look at the end of the API endpoint for v1 or v2</p>
               </section>
 
               <section class="slide level2">
                   <h1>Problem: List API versions</h1>
                   <p>Root of the Image API lists versions</p>
                   <p>keystone catalog only lists a versioned endpoint</p>
+              </section>
+
+              <section class="slide level2">
+                  <h1>Problem: API version discovery</h1>
+                  <p>Try one - if it doesn't work, try the other</p>
+                  <p><em>maybe</em> look at the end of the API endpoint for v1 or v2</p>
               </section>
 
               <section class="slide level2">
@@ -327,9 +332,9 @@ nova floating-ip-associate my-server {{ value_from_create }}
               </section>
 
               <section class="slide level2">
-                  <h1>Problem: security groups<h1>
+                  <h1>Problem: Security Groups<h1>
                           <p>I was trying to spin up a web server, but all my ports were blocked</p>
-                          <p>I'll be using ansible and puppet on this machine, I can configure iptables thanks</p>
+                          <p><small>I'll be using ansible and puppet on this machine, I can configure iptables thanks</small></p>
               </section>
 
               <section class="slide level2">
