@@ -114,7 +114,6 @@
 
               </section>
 
-              <section>
                   <section id="openstack-infra" data-transition='zoom'>
                       <h1>OpenStack Infra</h1>
                   </section>
@@ -153,8 +152,6 @@
                       <h1>We have no servers</h1>
                       <p>It all runs across HP and Rackspace Public Clouds.</p>
                   </section>
-
-              </section>
 
               <section id="architecture" class="slide level2">
                   <h1>Architecture</h1>
@@ -326,7 +323,7 @@ glance image-create --name=image-name --file=local-image-filename
                   <h3>http://git.openstack.org/cgit/openstack/os-client-config</h3>
                   <p>A library to handle config information for openstack clients</p>
                   <p>Tracks differences in vendors that can't be discovered</p>
-                  <p>In use in python-openstackclient and ansible today</p>
+                  <p>In use in python-openstackclient and ansible</p>
               </section>
 
               <section class="slide level2">
@@ -337,7 +334,28 @@ glance image-create --name=image-name --file=local-image-filename
 cloud.create_image('image-name', filename='image-filename.qcow2')
 cloud.create_server('my-server', image='immage-name', auto_ip=True)
                   </pre>
-                  <p>In use in Infra Nodepool and ansible today</p>
+                  <p>In use in Infra Nodepool and ansible</p>
+              </section>
+
+              <section class="slide level2">
+                  <h1>ansible</h1>
+                  <p>Brand new modules, based on shade</p>
+                  <p>Coming in 2.0 release</p>
+                  <pre>
+- os_keypair:
+      cloud: vexxhost
+      name: mordred
+      public_key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+- os_image:
+    cloud: vexxhost
+    name: Monty Ubuntu
+    file: ubuntu.vhd
+- os_server:
+    cloud: vexxhost
+    name: my-server
+    flavor_ram: 1024
+    image: Monty Ubuntu
+                  </pre>
               </section>
 
               <section class="slide level2">
