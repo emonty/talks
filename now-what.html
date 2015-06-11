@@ -264,40 +264,41 @@ glance image-create --name=image-name --file=local-image-filename
               <section class="slide level2">
                   <h1>Problem: Ensure it's on the Internet</h1>
                   <ul>
-                      <li class='fragment'>My VM may have a public IP</li>
-                      <li class='fragment'>My VM may need a floating IP from nova</li>
-                      <li class='fragment'>My VM may need a floating IP from neutron</li>
+                      <li class='fragment'>Cloud has externally routable IP from neutron (RunAbove, OVH)</li>
+                      <li class='fragment'>Cloud has externally routable IP neutron AND supports optional private tenant networks (vexxhost)</li>
+                      <li class='fragment'>Cloud has private tenant network provided by neutron and requires floating IP (HP, Dreamhost)</li>
+                      <li class='fragment'>Cloud only has private tenant network provided by nova-network and requires floating-ip for external routing (auro)</li>
+                      <li class='fragment'>Cloud has externally routable IP from neutron but no neutron APIs (Rackspace)</li>
                   </ul>
               </section>
 
               <section class="slide level2">
-                  <h1>VM Network with nova-network</h1>
+                  <h1>Maybe in code ...</h1>
                   <pre>
-        addresses:
-          private:
-          - addr: 10.181.5.77
-            version: 4
-          public:
-          - addr: 2001:4800:7810:512:be76:4eff:fe05:8325
-            version: 6
-          - addr: 98.129.169.30
-            version: 4
-                  </pre>
-              </section>
-
-              <section class="slide level2">
-                  <h1>VM Network with neutron</h1>
-                  <pre>
-        addresses:
-          mordred@inaugust.com-network:
-          - OS-EXT-IPS-MAC:mac_addr: fa:16:3e:a6:de:26
-            OS-EXT-IPS:type: fixed
-            addr: 10.0.0.6
-            version: 4
-          - OS-EXT-IPS-MAC:mac_addr: fa:16:3e:a6:de:26
-            OS-EXT-IPS:type: floating
-            addr: 15.126.239.219
-            version: 4
+def get_server_external_ipv4(cloud, server):
+    if cloud.has_service('network'):
+        try:
+            server_ports = cloud.search_ports(
+                filters={'device_id': server.id})
+            ext_nets = cloud.search_networks(filters={'router:external': True})
+        except NeutronClientException as e:
+            pass  # fall through
+        else:
+            for net in ext_nets:
+                for port in server_ports:
+                    if net['id'] == port['network_id']:
+                        for ip in port['fixed_ips']:
+                            if _utils.is_ipv4(ip['ip_address']):
+                                return ip['ip_address']
+    ext_ip = get_server_ip(server, key_name='public')
+    if ext_ip is not None:
+        return ext_ip
+    for interfaces in server.addresses.values():
+        for interface in interfaces:
+            if _utils.is_ipv4(interface['addr']) and \
+                    _utils.is_globally_routable_ipv4(interface['addr']):
+                return interface['addr']
+    return None
                   </pre>
               </section>
 
@@ -334,9 +335,9 @@ cloud.create_server('my-server', image='immage-name', auto_ip=True)
                   <p>Coming in 2.0 release</p>
                   <pre>
 - os_keypair:
-      cloud: vexxhost
-      name: mordred
-      public_key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+    cloud: vexxhost
+    name: mordred
+    public_key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
 - os_image:
     cloud: vexxhost
     name: Monty Ubuntu
