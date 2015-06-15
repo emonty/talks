@@ -320,6 +320,28 @@ def get_server_external_ipv4(cloud, server):
               </section>
 
               <section class="slide level2">
+                  <h1>os-client-config</h1>
+                  <p>~/.config/openstack/clouds.yaml</p>
+                  <pre>
+clouds:
+  hp-mordred:
+    profile: hp
+    auth:
+      username: mordred@inaugust.com
+      password: XXXXXXXXXXXXX
+      project_name: mordred@inaugust.com
+    region_name: region-b.geo-1
+  dreamhost:
+    profile: dreamhost
+    auth:
+      username: montay6
+      project_name: dhc2111978
+      password: XXXXXXXXXXXXX
+    region_name: RegionOne
+                  </pre>
+              </section>
+
+              <section class="slide level2">
                   <h1>shade</h1>
                   <h3>http://git.openstack.org/cgit/openstack-infra/shade</h3>
                   <p>A library to wrap business logic around client libraries</p>
@@ -336,18 +358,34 @@ cloud.create_server('my-server', image='immage-name', auto_ip=True)
                   <p>Coming in 2.0 release</p>
                   <pre>
 - os_keypair:
-    cloud: vexxhost
+    cloud: hp-mordred
     name: mordred
-    public_key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+    public_key_file: ~/.ssh/id_rsa.pub
 - os_image:
-    cloud: vexxhost
+    cloud: hp-mordred
     name: Monty Ubuntu
     file: ubuntu.vhd
 - os_server:
-    cloud: vexxhost
+    cloud: hp-mordred
     name: my-server
     flavor_ram: 1024
     image: Monty Ubuntu
+                  </pre>
+              </section>
+
+              <section class="slide level2">
+                  <h1>ansible</h1>
+                  <p>multi-cloud support</p>
+                  <pre>
+- os_keypair:
+    cloud: "{{ item }"
+    name: mordred
+    public_key_file: ~/.ssh/id_rsa.pub
+    with-items:
+    - vexxhost
+    - rackspace
+    - mordred-hp
+    - ovh
                   </pre>
               </section>
 
